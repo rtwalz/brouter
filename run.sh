@@ -1,5 +1,5 @@
 cd misc
-mkdir segments4
+mkdir -p segments4
 cd segments4
 
 #!/bin/bash
@@ -9,6 +9,7 @@ base_url="https://brouter.de/brouter/segments4"
 
 # Counter for parallel downloads
 count=0
+
 
 # Begin embedded files.txt content
 read -d '' files <<EOF
@@ -1153,7 +1154,6 @@ W95_N75.rd5                                        12-Oct-2023 01:03            
 W95_S5.rd5                                         12-Oct-2023 01:03               67995
 EOF
 
-# Loop over each line in the embedded files content to get filenames
 while IFS= read -r line
 do
     # Extract filename from the line
@@ -1162,8 +1162,8 @@ do
     # Construct full URL
     full_url="$base_url/$filename"
 
-    # Download the file in the background
-    wget "$full_url" &
+    # Download the file in the background quietly and notify once done
+    (wget -q "$full_url" && echo "$filename downloaded.") &
 
     # Increment counter
     count=$((count + 1))
