@@ -1184,4 +1184,3 @@ wait
 
 echo "All files downloaded!"
 cd ../..
-./misc/scripts/standalone/server.sh
