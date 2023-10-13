@@ -1,6 +1,3 @@
-sudo apt update
-sudo apt install openjdk-11-jdk wget -y
-./gradlew clean build fatJar # places JAR file in brouter-server/build/libs/
 cd misc
 mkdir segments4
 cd segments4
@@ -1184,3 +1181,4 @@ wait
 
 echo "All files downloaded!"
 cd ../..
+./misc/scripts/standalone/server.sh
