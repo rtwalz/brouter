@@ -114,7 +114,7 @@ public final class RoutingContext {
     bikeMode = 0.f != expctxGlobal.getVariableValue("validForBikes", 0.f);
     footMode = 0.f != expctxGlobal.getVariableValue("validForFoot", 0.f);
 
-    waypointCatchingRange = expctxGlobal.getVariableValue("waypointCatchingRange", 250.f);
+    waypointCatchingRange = expctxGlobal.getVariableValue("waypointCatchingRange", 1400.f);
 
     // turn-restrictions not used per default for foot profiles
     considerTurnRestrictions = 0.f != expctxGlobal.getVariableValue("considerTurnRestrictions", footMode ? 0.f : 1.f);
