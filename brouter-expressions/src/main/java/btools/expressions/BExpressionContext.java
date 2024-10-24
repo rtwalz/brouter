@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
@@ -78,6 +79,8 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   private int currentVarOffset;
 
   private BExpressionContext foreignContext;
+
+  public int[] noStartWays = new int[0];
 
   protected void setInverseVars() {
     currentVarOffset = nBuildInVars;
@@ -186,7 +189,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   /**
    * decode a byte-array into a lookup data array
    */
-  private void decode(int[] ld, boolean inverseDirection, byte[] ab) {
+  public void decode(int[] ld, boolean inverseDirection, byte[] ab) {
     BitCoderContext ctx = ctxDecode;
     ctx.reset(ab);
 
@@ -227,7 +230,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   }
 
   public List<String> getKeyValueList(boolean inverseDirection, byte[] ab) {
-    ArrayList<String> res = new ArrayList<>();
+    List<String> res = new ArrayList<>();
     decode(lookupData, inverseDirection, ab);
     for (int inum = 0; inum < lookupValues.size(); inum++) { // loop over lookup names
       BExpressionLookupValue[] va = lookupValues.get(inum);
@@ -245,7 +248,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   public int getLookupKey(String name) {
     int res = -1;
     try {
-      res = lookupNumbers.get(name).intValue();
+      res = lookupNumbers.get(name);
     } catch (Exception e) {
     }
     return res;
@@ -433,11 +436,11 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
 
 
   public void dumpStatistics() {
-    TreeMap<String, String> counts = new TreeMap<>();
+    NavigableMap<String, String> counts = new TreeMap<>();
     // first count
     for (String name : lookupNumbers.keySet()) {
       int cnt = 0;
-      int inum = lookupNumbers.get(name).intValue();
+      int inum = lookupNumbers.get(name);
       int[] histo = lookupHistograms.get(inum);
 //    if ( histo.length == 500 ) continue;
       for (int i = 2; i < histo.length; i++) {
@@ -450,7 +453,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
       String key = counts.lastEntry().getKey();
       String name = counts.get(key);
       counts.remove(key);
-      int inum = lookupNumbers.get(name).intValue();
+      int inum = lookupNumbers.get(name);
       BExpressionLookupValue[] values = lookupValues.get(inum);
       int[] histo = lookupHistograms.get(inum);
       if (values.length == 1000) continue;
@@ -507,7 +510,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
 
   public String variableName(int idx) {
     for (Map.Entry<String, Integer> e : variableNumbers.entrySet()) {
-      if (e.getValue().intValue() == idx) {
+      if (e.getValue() == idx) {
         return e.getKey();
       }
     }
@@ -544,9 +547,8 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
     }
 
     // look for that value
-    int inum = num.intValue();
-    BExpressionLookupValue[] values = lookupValues.get(inum);
-    int[] histo = lookupHistograms.get(inum);
+    BExpressionLookupValue[] values = lookupValues.get(num);
+    int[] histo = lookupHistograms.get(num);
     int i = 0;
     boolean bFoundAsterix = false;
     for (; i < values.length; i++) {
@@ -558,7 +560,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
       if (lookupData2 != null) {
         // do not create unknown value for external data array,
         // record as 'unknown' instead
-        lookupData2[inum] = 1; // 1 == unknown
+        lookupData2[num] = 1; // 1 == unknown
         if (bFoundAsterix) {
           // found value for lookup *
           //System.out.println( "add unknown " + name + "  " + value );
@@ -652,11 +654,11 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
             // found negative maxdraft values
             // no negative values
             // values are float with 2 decimals
-            lookupData2[inum] = 1000 + (int) (Math.abs(Float.parseFloat(value)) * 100f);
+            lookupData2[num] = 1000 + (int) (Math.abs(Float.parseFloat(value)) * 100f);
           } catch (Exception e) {
             // ignore errors
             System.err.println("error for " + name + "  " + org + " trans " + value + " " + e.getMessage());
-            lookupData2[inum] = 0;
+            lookupData2[num] = 0;
           }
         }
         return newValue;
@@ -677,15 +679,15 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
       histo = nhisto;
       newValue = new BExpressionLookupValue(value);
       values[i] = newValue;
-      lookupHistograms.set(inum, histo);
-      lookupValues.set(inum, values);
+      lookupHistograms.set(num, histo);
+      lookupValues.set(num, values);
     }
 
     histo[i]++;
 
     // finally remember the actual data
-    if (lookupData2 != null) lookupData2[inum] = i;
-    else lookupData[inum] = i;
+    if (lookupData2 != null) lookupData2[num] = i;
+    else lookupData[num] = i;
     return newValue;
   }
 
@@ -700,11 +702,10 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
     }
 
     // look for that value
-    int inum = num.intValue();
-    int nvalues = lookupValues.get(inum).length;
+    int nvalues = lookupValues.get(num).length;
     if (valueIndex < 0 || valueIndex >= nvalues)
       throw new IllegalArgumentException("value index out of range for name " + name + ": " + valueIndex);
-    lookupData[inum] = valueIndex;
+    lookupData[num] = valueIndex;
   }
 
 
@@ -721,9 +722,8 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
     }
 
     // look for that value
-    int inum = num.intValue();
-    int nvalues = lookupValues.get(inum).length;
-    int oldValueIndex = lookupData[inum];
+    int nvalues = lookupValues.get(num).length;
+    int oldValueIndex = lookupData[num];
     if (oldValueIndex > 1 && oldValueIndex < valueIndex) {
       return;
     }
@@ -732,12 +732,12 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
     }
     if (valueIndex < 0)
       throw new IllegalArgumentException("value index out of range for name " + name + ": " + valueIndex);
-    lookupData[inum] = valueIndex;
+    lookupData[num] = valueIndex;
   }
 
   public boolean getBooleanLookupValue(String name) {
     Integer num = lookupNumbers.get(name);
-    return num != null && lookupData[num.intValue()] == 2;
+    return num != null && lookupData[num] == 2;
   }
 
   public int getOutputVariableIndex(String name, boolean mustExist) {
@@ -849,7 +849,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   public void setVariableValue(String name, float value, boolean create) {
     Integer num = variableNumbers.get(name);
     if (num != null) {
-      variableData[num.intValue()] = value;
+      variableData[num] = value;
     } else if (create) {
       num = getVariableIdx(name, create);
       float[] readOnlyData = variableData;
@@ -858,13 +858,13 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
       for (int i = 0; i < minWriteIdx; i++) {
         variableData[i] = readOnlyData[i];
       }
-      variableData[num.intValue()] = value;
+      variableData[num] = value;
     }
   }
 
   public float getVariableValue(String name, float defaultValue) {
     Integer num = variableNumbers.get(name);
-    return num == null ? defaultValue : getVariableValue(num.intValue());
+    return num == null ? defaultValue : getVariableValue(num);
   }
 
   float getVariableValue(int variableIdx) {
@@ -882,7 +882,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
         return -1;
       }
     }
-    return num.intValue();
+    return num;
   }
 
   int getMinWriteIdx() {
@@ -900,7 +900,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
 
   public int getLookupNameIdx(String name) {
     Integer num = lookupNumbers.get(name);
-    return num == null ? -1 : num.intValue();
+    return num == null ? -1 : num;
   }
 
   public final void markLookupIdxUsed(int idx) {
@@ -956,6 +956,7 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
 
   private String _parseToken() throws Exception {
     StringBuilder sb = new StringBuilder(32);
+    StringBuilder sbcom = new StringBuilder(32);
     boolean inComment = false;
     for (; ; ) {
       int ic = _readerDone ? -1 : _br.read();
@@ -968,7 +969,33 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
       if (c == '\n') linenr++;
 
       if (inComment) {
+        sbcom.append(c);
         if (c == '\r' || c == '\n') inComment = false;
+        if (!inComment) {
+          Integer num = variableNumbers.get("check_start_way");
+          if (num != null && noStartWays.length == 0 && sbcom.toString().contains("noStartWay")) {
+            String var = sbcom.toString().trim();
+            String[] savar = var.split("\\|");
+            if (savar.length == 4) {
+              var = savar[3].substring(savar[3].indexOf("=")+1).trim();
+              String[] sa = var.split(";");
+              for (String s: sa) {
+                String[] sa2 = s.split(",");
+                String name = sa2[0];
+                String value = sa2[1];
+                int nidx =  getLookupNameIdx(name);
+                if (nidx == -1) break;
+                int vidx = getLookupValueIdx(nidx, value);
+                int[] tmp = new int[noStartWays.length + 2];
+                if (noStartWays.length > 0) System.arraycopy(noStartWays, 0, tmp, 0, noStartWays.length);
+                noStartWays = tmp;
+                noStartWays[noStartWays.length-2] = nidx;
+                noStartWays[noStartWays.length-1] = vidx;
+              }
+            }
+          }
+          sbcom.setLength(0);
+        }
         continue;
       }
       if (Character.isWhitespace(c)) {
@@ -983,6 +1010,23 @@ public abstract class BExpressionContext implements IByteArrayUnifier {
   float assign(int variableIdx, float value) {
     variableData[variableIdx] = value;
     return value;
+  }
+
+  int[] ld2 = new int[512];
+  public boolean checkStartWay(byte[] ab) {
+    if (ab == null) return true;
+    Arrays.fill(ld2, 0);
+    decode(ld2, false, ab);
+    for (int i = 0; i < noStartWays.length; i += 2) {
+      int key = noStartWays[i];
+      int value = noStartWays[i+1];
+      if (ld2[key] == value) return false;
+    }
+    return true;
+  }
+
+  public void freeNoWays() {
+    noStartWays = new int[0];
   }
 
 }
