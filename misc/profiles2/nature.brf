@@ -241,8 +241,8 @@ assign costfactor
   # before the walkway-switch, to be able
   # to really exclude them by setting cost to infinity
   #
-  if ( and highway=footway footway=sidewalk ) then 10
-  else if ( and highway=footway footway=crossing ) then 2
+  if ( and highway=footway footway=sidewalk ) then 10000
+  else if ( and highway=footway footway=crossing ) then 10000
   else if ( highway=steps ) then ( if allow_steps then 1.5 else 10000 )
   else if ( route=ferry ) then ( if allow_ferries then 5.67 else 10000 )
 
